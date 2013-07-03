@@ -1,4 +1,4 @@
-(defproject clojureql "1.0.4"
+(defproject delver/clojureql "1.0.4"
   :description      "Superior SQL integration for Clojure"
   :url              "http://clojureql.org/"
   :license          {:name "Eclipse Public License - v 1.0"
