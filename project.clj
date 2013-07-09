@@ -1,9 +1,9 @@
-(defproject delver/clojureql "1.0.4"
+(defproject delver/clojureql "1.0.5-SNAPSHOT"
   :description      "Superior SQL integration for Clojure"
   :url              "http://clojureql.org/"
   :license          {:name "Eclipse Public License - v 1.0"
                      :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  
+
   :source-path "src"
   :dependencies     [[org.clojure/clojure         "1.5.1"]
                      [org.clojure/core.incubator  "0.1.3"]
@@ -13,7 +13,7 @@
       :dependencies [[mysql/mysql-connector-java  "5.1.25"]
                      [org.xerial/sqlite-jdbc      "3.7.2"]
                      [org.postgresql/postgresql   "9.2-1003-jdbc4"]
-                     [org.apache.derby/derby      "10.10.1.1"]]}} 
+                     [org.apache.derby/derby      "10.10.1.1"]]}}
 
   :min-lein-version "2.2.0"
 
