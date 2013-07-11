@@ -326,8 +326,8 @@
                             (throw (Exception.
                                     (format "ResultSet has same label %s for different values, please rename one" key)))))
                         (assoc! mapping key val)))
-        empty (apply hash-map
-                     (interleave (set keys)
+        empty (apply array-map
+                     (interleave keys
                                  (repeat ::missing)))
         rows (fn rows []
                (lazy-seq
