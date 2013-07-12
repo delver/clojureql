@@ -1,9 +1,9 @@
 (ns clojureql.internal
-  (:import [java.sql Statement])
+  (:import [java.sql Connection Statement PreparedStatement])
   (:require
     clojure.set
     [clojure.java.jdbc :as jdbc])
-  (:use [clojure.string :only [join split upper-case replace] :rename {join join-str replace replace-str}]
+  (:use [clojure.string :only [join split upper-case replace trim] :rename {join join-str replace replace-str}]
         [clojure.core.incubator :only [-?> -?>>]]))
 
 (defn upper-name [kw]
@@ -13,28 +13,28 @@
   "Takes a statement and a hashmap of aliases and returns
    a statement with all aliases applied"
   [stmt aliases]
-  [(reduce (fn [acc [old new]]
+  [(reduce (fn [^String acc [^String old ^String new]]
             (.replaceAll acc old (-> (.split new "\\.") first)))
           stmt aliases)])
 
 (defn clean-sql [coll]
   "For internal use only. Concats a collection of strings interposing spaces
    between the items. Removes any garbage whitespace."
-  (loop [s (-> (join-str " " coll) .trim)]
+  (loop [s (-> (join-str " " coll) trim)]
     (if-not (.contains s "  ")
       s
       (recur (-> (.replace s "  " " ")
                  (.replaceAll "\\( " "\\(")
                  (.replaceAll " \\)" "\\)"))))))
 
-(defn assemble-sql [s & args]
+(defn assemble-sql [^String s & args]
   "For internal use only. Works like format but cleans up afterwards"
-  (loop [s (-> (apply format s args) .trim)]
+  (loop [s (-> (apply format s args) trim)]
     (if-not (.contains s "  ")
       s
       (recur (.replace s "  " " ")))))
 
-(defn nskeyword
+(defn ^String nskeyword
   "Converts a namespace qualified keyword to a string"
   [k]
   (if (string? k)
@@ -69,7 +69,7 @@
         (and (keyword? c)
              (not-any? nil? ((juxt namespace name) (keyword c)))))))
 
-(defn split-fields [t a]
+(defn split-fields [t ^String a]
   (->> (.split a ":")
        (map #(if (= % "*")
                "*"
@@ -80,7 +80,7 @@
        (apply str)))
 
 (defn rename-subselects [tname tcols]
-  (let [tcols (mapcat #(.split % ",") tcols)
+  (let [tcols (mapcat (fn [^String s] (.split s ",")) tcols)
         tname (if (map? tname)
                 (str (nskeyword (-> tname vals last)) ".")
                 (str (nskeyword tname) "_subselect."))]
@@ -121,7 +121,7 @@
 
 (declare to-name)
 
-(defn to-tablename
+(defn ^String to-tablename
   [c]
   (cond
    (nil? c)         nil
@@ -269,11 +269,12 @@
                             (subs s (inc (.indexOf s ".")))))]
     (if (map? renames)
       (format "%s AS %s(%s)" oname alias
-                    (reduce #(let [[orig new] %2]
-                         (.replaceAll %1 (unqualify orig) (unqualify new)))
-                      (join-str "," (->> (map nskeyword tcols)
-                                         (filter #(.contains % alias))
-                                         (map #(subs % (inc (.indexOf % "."))))))
+                    (reduce (fn [^String acc [orig new]]
+                              (.replaceAll acc (unqualify orig) (unqualify new)))
+                      (join-str "," (->>
+                                      (map nskeyword tcols)
+                                      (filter (fn [^String s] (.contains s alias)))
+                                      (map (fn [^String s] (subs s (inc (.indexOf s ".")))))))
                       renames))
       (str oname "(" (to-fieldlist tcols) ")"))))
 
@@ -289,13 +290,12 @@
   " Allows you to generate an sql clause by identifying params as %1, %2, %n.
 
     (sql-clause '%1 > %2 < %1' 'one' 'two') => 'one > two < one' "
-  (letfn [(rep [s i] (.replaceAll s (str "%" (inc i))
-                                  (let [item (nth args i)]
-                                    (cond
-                                     (keyword? item) (name item)
-                                     (string? item) (str "'" item "'")
-                                     :else
-                                     (str item)))))]
+  (letfn [(rep [^String s i] (.replaceAll s (str "%" (inc i))
+                                          (let [item (nth args i)]
+                                            (cond
+                                             (keyword? item) (name item)
+                                             (string? item) (str "'" item "'")
+                                             :else (str item)))))]
     (if (empty? args)
       pred
       (loop [i 0 retr pred]
@@ -349,7 +349,7 @@
   [[sql & params :as sql-params] func]
   (when-not (vector? sql-params)
     (throw (Exception. "sql-params must be a vector")))
-  (with-open [stmt (jdbc/prepare-statement (jdbc/find-connection) sql)]
+  (with-open [^PreparedStatement stmt (jdbc/prepare-statement (jdbc/find-connection) sql)]
     (doseq [[idx v] (map vector (iterate inc 1) params)]
       (.setObject stmt idx v))
     (if-let [fetch-size (-> @#'jdbc/*db* :opts :fetch-size)]
@@ -361,7 +361,7 @@
       (with-open [rset (.executeQuery stmt)]
         (func (result-seq rset))))))
 
-(defn supports-generated-keys? [conn]
+(defn supports-generated-keys? [^Connection conn]
   "Checks if the JDBC Driver supports generated keys"
   (try (.supportsGetGeneratedKeys (.getMetaData conn))
        (catch AbstractMethodError _ false)))
@@ -372,7 +372,7 @@
     (jdbc/prepare-statement conn sql :return-keys true)
     (jdbc/prepare-statement conn sql)))
 
-(defn generated-keys [stmt]
+(defn generated-keys [^Statement stmt]
   "When supported by the JDBC driver, returns the generated keys of the latest executed statement"
   (when (supports-generated-keys? (.getConnection stmt))
     (let [ks (.getGeneratedKeys stmt)]
@@ -386,7 +386,7 @@
   open database connection. Each param-group is a seq of values for all of
   the parameters."
   ([sql param-group]
-     (with-open [stmt (prepare-statement (jdbc/find-connection) sql)]
+     (with-open [^PreparedStatement stmt (prepare-statement (jdbc/find-connection) sql)]
        (doseq [[idx v] (map vector (iterate inc 1) param-group)]
          (.setObject stmt idx v))
        (jdbc/transaction
@@ -394,7 +394,7 @@
           (with-meta [(.getUpdateCount stmt)]
             (generated-keys stmt))))))
   ([sql param-group & param-groups]
-     (with-open [stmt (jdbc/prepare-statement (jdbc/find-connection) sql)]
+     (with-open [^PreparedStatement stmt (jdbc/prepare-statement (jdbc/find-connection) sql)]
        (doseq [param-group (cons param-group param-groups)]
          (doseq [[idx v] (map vector (iterate inc 1) param-group)]
            (.setObject stmt idx v))

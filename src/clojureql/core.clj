@@ -8,6 +8,7 @@
     :url    "http://github.com/LauJensen/clojureql"}
   (:refer-clojure
    :exclude [take drop sort distinct conj! disj! compile case])
+  (:import [java.io Writer])
   (:use
     [clojureql internal predicates]
     [clojure.string :only [join upper-case] :rename {join join-str}]
@@ -439,11 +440,11 @@
 
                                         ; HELPERS
 
-(defn interpolate-sql [[stmt & args]]
+(defn ^String interpolate-sql [[stmt & args]]
   "For compilation test purposes only"
   (reduce #(.replaceFirst %1 "\\?" (if (nil? %2) "NULL" (str %2))) stmt args))
 
-(defmethod print-method RTable [tble ^String out]
+(defmethod print-method RTable [tble ^Writer out]
   "RTables print as SQL92 compliant SQL"
   (when *debug*
     (doseq [[k v] tble]

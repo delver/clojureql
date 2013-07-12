@@ -4,7 +4,7 @@
   "Generates a JOIN statement from the joins field of a table"
   [dialect {[tname pred] :data type :type pos :position} aliases]
   (let [pred (if (and (seq aliases) (string? pred))
-               (reduce (fn [acc a]
+               (reduce (fn [acc ^String a]
                          (let [t1name (if (or (keyword? tname) (string? tname))
                                         (to-tablename tname)
                                         (to-tablename (:tname tname)))

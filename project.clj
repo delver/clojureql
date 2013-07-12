@@ -17,7 +17,7 @@
 
   :min-lein-version "2.2.0"
 
-  :globa-vars { *warn-on-reflection* true }
+  :global-vars { *warn-on-reflection* true }
 
   :repositories {"clojure-releases"  {:url "http://build.clojure.org/releases"}
                  "clojure-snapshots"  {:url "http://build.clojure.org/snapshots"}})
