@@ -219,7 +219,7 @@
   (testing "joins on subselects"
     (are [x y] (= (-> x (compile nil) interpolate-sql) y)
          (-> (select (table nil {:company :c}) (where (= :c.name "MongoDB")))
-             (join (select (table nil {:investment :k}) (where (= :k.type "angel"))) 
+             (join (select (table nil {:investment :k}) (where (= :k.type "angel")))
                    (where (= :k.permalink :c.company_permalink))))
          "SELECT c.*,k.* FROM company c JOIN (SELECT k.* FROM investment k WHERE (k.type = angel)) AS k ON (k.permalink = c.company_permalink) WHERE (c.name = MongoDB)"))
 

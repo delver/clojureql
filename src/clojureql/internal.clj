@@ -269,8 +269,8 @@
                             (subs s (inc (.indexOf s ".")))))]
     (if (map? renames)
       (format "%s AS %s(%s)" oname alias
-                    (reduce (fn [^String acc [orig new]]
-                              (.replaceAll acc (unqualify orig) (unqualify new)))
+              (reduce (fn [^String acc [orig new]]
+                        (.replaceAll acc (unqualify orig) (unqualify new)))
                       (join-str "," (->>
                                       (map nskeyword tcols)
                                       (filter (fn [^String s] (.contains s alias)))
