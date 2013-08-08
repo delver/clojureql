@@ -317,11 +317,13 @@
     (aggregate this aggregates []))
 
   (aggregate [this aggregates group-by]
-     (let [grps (reduce conj group-by grouped-by)
-           table (project this (into grps aggregates))]
-      (if (seq grps)
-        (grouped table grps)
-        table)))
+    (if (has-aggregate? this)
+      (aggregate (table this) aggregates group-by)
+      (let [grps (reduce conj group-by grouped-by)
+            table (project this (into grps aggregates))]
+        (if (seq grps)
+          (grouped table grps)
+          table))))
 
   (conj! [this records]
     (let [return (with-cnx cnx

@@ -68,6 +68,8 @@
                          (join-str " " (map first jdata)))
                     (table? tcols)
                     (compile tcols (or (:dialect cnx) :default))
+                    (table? tname)
+                    (compile tname (or (:dialect cnx) :default))
                     :else
                     (if renames
                       (with-rename tname (map #(add-tname tname %) tcols) renames)
@@ -118,6 +120,7 @@
                          ; Not sure why jdata is referenced twice; see issue #138
                          ;(map (comp :env second) jdata)
                          (if (table? tcols) (rest tables))
+                         (if (table? tname) (rest tables))
                          (if preds [(:env preds)])
                          (if having [(:env having)])]
                         flatten (remove nil?) vec)

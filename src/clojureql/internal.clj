@@ -124,11 +124,12 @@
 (defn ^String to-tablename
   [c]
   (cond
-   (nil? c)         nil
-   (keyword? c)     (to-name c)
-   (string? c)      c
-   :else            ; Map denotes rename
-   (let [[orig new] (map name (first c))]
+   (:tname c)   (to-tablename (:tname c))
+   (nil? c)     nil
+   (keyword? c) (to-name c)
+   (string? c)  c
+   :else        ; Map denotes rename
+   (let [[orig new] (map to-tablename (first c))]
      (str orig \space new))))
 
 (defn to-name

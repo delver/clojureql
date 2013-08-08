@@ -259,6 +259,24 @@
          (str "SELECT users.name,users.country AS user_country,count(*) FROM users "
               "WHERE (users.admin = true) GROUP BY users.name,users.country")))
 
+  (testing "nested aggregates"
+    (are [x y] (= (-> x (compile nil) interpolate-sql) y)
+         (-> (table :users)
+             (select (where (= :admin true)))
+             (aggregate [[:count/* :as :user_count]] [:country])
+             (aggregate [[:max/user_count :as :most_users]]))
+         (str "SELECT max(users.user_count) AS most_users FROM "
+              "(SELECT users.country,count(*) AS user_count FROM users "
+              "WHERE (users.admin = true) GROUP BY users.country)")
+         (-> (table :users)
+             (select (where (= :admin true)))
+             (aggregate [[:count/* :as :user_count]] [:country])
+             (aggregate [[:count/user_count :as :count_of_counts]] [:user_count]))
+         (str "SELECT users.user_count,count(users.user_count) AS count_of_counts FROM "
+              "(SELECT users.country,count(*) AS user_count FROM users "
+              "WHERE (users.admin = true) GROUP BY users.country) "
+              "GROUP BY users.user_count")))
+
   (testing "join with aggregate"
     (let [photo-counts-by-user (-> (table :photos)
                                    (aggregate [[:count/* :as :cnt]] [:user_id]))]
@@ -519,5 +537,4 @@
          (-> (take (table :t1) 5)
              (union (table :t2))
              (take 10))
-         "(SELECT t1.* FROM t1 LIMIT 5) UNION (SELECT t2.* FROM t2) LIMIT 10"))
-  )
+         "(SELECT t1.* FROM t1 LIMIT 5) UNION (SELECT t2.* FROM t2) LIMIT 10")))

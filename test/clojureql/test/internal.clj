@@ -2,7 +2,8 @@
   (:refer-clojure
    :exclude [compile take drop sort distinct conj! disj! case])
   (:use clojure.test
-        clojureql.internal))
+        clojureql.internal
+        clojureql.core))
 
 (deftest test-to-orderlist
   (are [tname aggregates fields expected]
@@ -20,7 +21,9 @@
     :user "user"
     "user" "user"
     {:user :developer} "user developer"
-    {"user" "developer"} "user developer"))
+    {"user" "developer"} "user developer"
+    (table :user) "user"
+    (table {:user :developer}) "user developer"))
 
 (deftest test-to-tablealias
   (are [tname expected]
